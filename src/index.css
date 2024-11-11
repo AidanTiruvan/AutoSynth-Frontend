@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Hide scrollbar for Chrome, Safari, and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge, and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+@layer base {
+  select {
+    @apply bg-gray-300 dark:bg-gray-700 p-2 border border-gray-400 dark:border-gray-600 dark:text-black text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full placeholder-gray-400;
+  }
+
+  button {
+    @apply dark:bg-stone-800 bg-stone-200 rounded-xl text-lg border-[1px] border-stone-800 dark:border-stone-200 py-2 px-4 font-medium cursor-pointer transition-colors hover:border-blue-600 dark:hover:border-blue-400;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold text-center;
+  }
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
