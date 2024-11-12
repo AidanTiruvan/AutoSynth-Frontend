@@ -1,43 +1,34 @@
-import * as Tone from 'tone'
-import { RootStore } from '../../../store'
-import { TimeUtils } from '../utils/time-utils'
-import { setCurrentTickFromSequencer } from '../../../features/daw/playlist-header/store/playlist-header-slice'
-import { setTime } from '../../../features/daw/player-bar/store/playerBarSlice'
-import { observeStore } from '../../../store/observers'
-import { selectRequestedNewTickPosition } from '../../../features/daw/playlist-header/store/selectors'
-import { selectBpm } from '../../../features/daw/player-bar/store/selectors'
+import * as Tone from 'tone';
+import { RootStore } from '../../../store';
+import { TimeUtils } from '../utils/time-utils';
+import { setCurrentTickFromSequencer } from '../../../features/daw/playlist-header/store/playlist-header-slice';
+import { resetTime } from '../../../features/daw/player-bar/store/playerBarSlice';
+import { observeStore } from '../../../store/observers';
+import { selectRequestedNewTickPosition } from '../../../features/daw/playlist-header/store/selectors';
 
 export class Clock {
-  currentTick: number
-
-  private _bpm: number
-  private _time: number
-  private _store: RootStore
+  currentTick: number;
+  private _store: RootStore;
 
   constructor(store: RootStore) {
-    this._store = store
-    this._bpm = store.getState().playerBar.bpm
-    this._time = 0
-    this.currentTick = 0
-
-    Tone.Transport.bpm.value = this._bpm
+    this._store = store;
+    this.currentTick = 0;
 
     Tone.Transport.scheduleRepeat(() => {
-      this.handleTick()
-    }, '16n')
+      this.handleTick();
+    }, '16n');
 
-    this.registerStoreListeners()
+    this.registerStoreListeners();
   }
 
   requestNewTickPosition(newTick: number | null) {
-    if (newTick === null) return
+    if (newTick === null) return;
 
-    Tone.Transport.position = TimeUtils.tickToToneTime(newTick)
-    this.getTickAndTimeFromToneTransport()
+    Tone.Transport.position = TimeUtils.tickToToneTime(newTick);
+    this.getTickAndTimeFromToneTransport();
 
     if (Tone.Transport.state !== 'started') {
-      // will trigger store update ONLY if transport is not playing so to not collide with the handleTick method
-      this.notifyStore()
+      this.notifyStore();
     }
   }
 
@@ -46,29 +37,20 @@ export class Clock {
       this._store,
       selectRequestedNewTickPosition,
       this.requestNewTickPosition.bind(this)
-    )
-
-    observeStore(this._store, selectBpm, this.handleRequestedNewBpm.bind(this))
-  }
-
-  private handleRequestedNewBpm(newBpm: number) {
-    this._bpm = newBpm
-    Tone.Transport.bpm.value = this._bpm
+    );
   }
 
   private handleTick() {
-    this.getTickAndTimeFromToneTransport()
-    this.notifyStore()
+    this.getTickAndTimeFromToneTransport();
+    this.notifyStore();
   }
 
   private getTickAndTimeFromToneTransport() {
-    this.currentTick = TimeUtils.toneTimeToTicks(Tone.Transport.position)
-    // sometimes the transport position is negative, so we need to clamp it to 0
-    this._time = Math.max(Tone.Transport.seconds, 0)
+    this.currentTick = TimeUtils.toneTimeToTicks(Tone.Transport.position);
   }
 
   private notifyStore() {
-    this._store.dispatch(setTime(this._time))
-    this._store.dispatch(setCurrentTickFromSequencer(this.currentTick))
+    this._store.dispatch(resetTime());
+    this._store.dispatch(setCurrentTickFromSequencer(this.currentTick));
   }
 }

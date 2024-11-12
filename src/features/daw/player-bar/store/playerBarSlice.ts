@@ -1,45 +1,30 @@
-import { PayloadAction, createSlice } from '@reduxjs/toolkit'
-import { DEFAULT_BPM } from '../constants/player-bar-constants' // Removed DEFAULT_VOLUME
+import { createSlice } from '@reduxjs/toolkit';
 
-export interface PlayerState {
-  isPlaying: boolean
-  bpm: number
-  time: number
-  // Removed volume
+interface PlayerState {
+  isPlaying: boolean;
+  currentTime: number;
 }
 
 const initialState: PlayerState = {
   isPlaying: false,
-  bpm: DEFAULT_BPM,
-  time: 0,
-  // Removed volume from initialState
-}
+  currentTime: 0,
+};
 
-export const playerBarSlice = createSlice({
+const playerBarSlice = createSlice({
   name: 'playerBar',
   initialState,
   reducers: {
     togglePlay: (state) => {
-      state.isPlaying = !state.isPlaying
+      state.isPlaying = !state.isPlaying;
     },
-    stop: (state) => {
-      state.isPlaying = false
+    incrementTime: (state) => {
+      state.currentTime += 0.1; // Increment time by 0.1 seconds
     },
-    setBpm: (state, action: PayloadAction<number>) => {
-      state.bpm = action.payload
+    resetTime: (state) => {
+      state.currentTime = 0;
     },
-    setTime(state, action: PayloadAction<number>) {
-      state.time = action.payload
-    },
-    // Removed setVolume reducer
   },
-})
+});
 
-export const {
-  togglePlay,
-  setTime,
-  stop,
-  setBpm,
-} = playerBarSlice.actions // Removed setVolume action
-
-export default playerBarSlice.reducer
+export const { togglePlay, incrementTime, resetTime } = playerBarSlice.actions;
+export default playerBarSlice.reducer;
