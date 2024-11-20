@@ -14,12 +14,13 @@ const RulerThumb = ({ currentTime }: { currentTime: number }) => {
     <div
       className="absolute bottom-0 w-0 h-0 
       border-l-[8px] border-l-transparent
-      border-t-[17px] border-t-black dark:border-t-black
+      border-t-[17px] dark:border-t-gray-400 border-t-gray-800
       border-r-[8px] border-r-transparent"
       style={{ left: `${leftOffset}px`, transition: 'left 0.1s linear' }}
     />
   );
 };
+
 
 const RulerBar = ({ barIndex }: { barIndex: number }) => {
   return (
