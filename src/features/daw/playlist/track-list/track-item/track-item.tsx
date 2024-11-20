@@ -1,33 +1,33 @@
-import { Track } from '../../../../../model/track/track'
-import { TRACK_HEIGHT } from '../../constants'
-import { useState } from 'react'
-import { TrackPopupMenu } from '../track-popup-menu/track-popup-menu'
-import { IoMdSettings } from 'react-icons/io'
-import { TrackItemSoloMuted } from './track-item-solo-mute/track-item-solo-muted'
-import { TrackItemNameVolume } from './track-item-name-volume/track-item-name-volume'
+import { Track } from '../../../../../model/track/track';
+import { TRACK_HEIGHT } from '../../constants';
+import { useState } from 'react';
+import { TrackPopupMenu } from '../track-popup-menu/track-popup-menu';
+import { IoMdSettings } from 'react-icons/io';
+import { TrackItemSoloMuted } from './track-item-solo-mute/track-item-solo-muted';
+import { TrackItemNameVolume } from './track-item-name-volume/track-item-name-volume';
 
 export type TrackItemProps = {
-  track: Track
-  selectedTrack?: Track | null
-  onSelectTrack: (track: Track) => void
-}
+  track: Track;
+  selectedTrack?: Track | null;
+  onSelectTrack: (track: Track) => void;
+};
 
 export const TrackItem = ({
   track,
   selectedTrack,
   onSelectTrack,
 }: TrackItemProps) => {
-  const isSelected = selectedTrack?.id === track.id
+  const isSelected = selectedTrack?.id === track.id;
 
-  const [showTrackMenu, setShowTrackMenu] = useState(false)
-  const [isRenaming, setIsRenaming] = useState(false)
+  const [showTrackMenu, setShowTrackMenu] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const effectivelyMuted =
-    track.muted || (track.areThereAnyOtherTrackSoloed && !track.soloed)
+    track.muted || (track.areThereAnyOtherTrackSoloed && !track.soloed);
 
   const selectedHighlightColor = effectivelyMuted
     ? 'bg-gray-800 dark:bg-gray-500'
-    : `bg-${track.color}-500`
+    : `bg-${track.color}-500`;
 
   return (
     <div
@@ -37,12 +37,11 @@ export const TrackItem = ({
           : 'bg-zinc-100 dark:bg-zinc-900'
       }`}
       style={{ height: `${TRACK_HEIGHT}px`, minHeight: `${TRACK_HEIGHT}px` }}
-      onClick={() => onSelectTrack(track)}
-      onContextMenu={(e) => {
-        e.preventDefault()
-        onSelectTrack(track)
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        onSelectTrack(track); // Select the track on double-click
         if (!showTrackMenu) {
-          setShowTrackMenu(true)
+          setShowTrackMenu(true); // Open the popup menu on double-click
         }
       }}
     >
@@ -59,7 +58,7 @@ export const TrackItem = ({
           className="mt-4 cursor-pointer self-center"
           onClick={() => {
             if (!showTrackMenu) {
-              setShowTrackMenu(true)
+              setShowTrackMenu(true);
             }
           }}
         >
@@ -71,8 +70,8 @@ export const TrackItem = ({
               track={track}
               onClose={() => setShowTrackMenu(false)}
               onRename={() => {
-                setShowTrackMenu(false)
-                setIsRenaming(true)
+                setShowTrackMenu(false);
+                setIsRenaming(true);
               }}
             />
           </div>
@@ -81,5 +80,5 @@ export const TrackItem = ({
 
       <div className={`h-full w-1 ${isSelected && selectedHighlightColor}`} />
     </div>
-  )
-}
+  );
+};

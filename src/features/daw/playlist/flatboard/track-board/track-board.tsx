@@ -65,7 +65,7 @@ export const TrackBoard = ({
       ref={trackBoardRef}
       className={`relative ${selectedTrack?.id === track.id ? 'bg-highlight' : ''}`}
       onDragOver={(e) => e.preventDefault()}
-      onClick={handleShowAddMenu}
+      onDoubleClick={handleShowAddMenu}
     >
       <div className="flex flex-row" style={{ height: `${TRACK_HEIGHT}px` }}>
         <MixGrid
