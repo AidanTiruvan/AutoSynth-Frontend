@@ -20,7 +20,10 @@ export const TrackBoard = ({
   const maxBars = useSelector(selectMaxBars);
   const dispatch = useDispatch();
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
   const menuRef = useRef<HTMLDivElement | null>(null);
   const trackBoardRef = useRef<HTMLDivElement | null>(null);
 
@@ -36,11 +39,6 @@ export const TrackBoard = ({
     }
     setShowAddMenu(true);
   };
-
-  // Calculate the end position of the last sub-procedure
-  const lastEndTick = track.bars.length
-    ? Math.max(...track.bars.map((bar) => bar.startAtTick + bar.durationTicks))
-    : 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -60,6 +58,10 @@ export const TrackBoard = ({
     };
   }, [showAddMenu]);
 
+  const lastEndTick = track.bars.length
+    ? Math.max(...track.bars.map((bar) => bar.startAtTick + bar.durationTicks))
+    : 0;
+
   return (
     <div
       ref={trackBoardRef}
@@ -71,8 +73,12 @@ export const TrackBoard = ({
         <MixGrid
           maxBars={maxBars}
           onSelectTick={handleSelectTick}
-          onCreateBar={() => { /* Add logic here for creating a bar */ }}
-          onPasteBar={() => { /* Add logic here for pasting a bar */ }}
+          onCreateBar={() => {
+            /* Add logic here for creating a bar */
+          }}
+          onPasteBar={() => {
+            /* Add logic here for pasting a bar */
+          }}
           evenColumnsColor={'bg-gray-500'}
           oddColumnsColor={'bg-gray-400'}
         />
@@ -80,10 +86,12 @@ export const TrackBoard = ({
         {track.bars.map((bar: Bar) => (
           <TrackBar
             key={bar.id}
-            track={track}
             bar={bar}
+            track={track} // Ensure `track` is passed
             onSelectBar={() => dispatch(selectTrack(track))}
-            onBarDetails={() => { /* Add logic for handling bar details */ }}
+            onBarDetails={() => {
+              /* Add logic for handling bar details */
+            }}
           />
         ))}
 
@@ -100,7 +108,7 @@ export const TrackBoard = ({
             <AddTrackMenu
               onClose={() => setShowAddMenu(false)}
               trackId={track.id}
-              lastEndTick={lastEndTick} // Pass the last end position to AddTrackMenu
+              lastEndTick={lastEndTick}
             />
           </div>
         )}

@@ -1,78 +1,25 @@
-import { PopupMenu } from '../../../../common/components/popup-menu/popup-menu';
-import { FLATBOARD_BAR_HEADER_HEIGHT, TRACK_HEIGHT } from '../../../constants';
 import { TrackBarProps } from './types';
-import { useTrackBarData } from './use-track-bar-data';
+import { TICK_WIDTH_PIXEL } from '../../../constants'; // Ensure this file exists and exports TICK_WIDTH_PIXEL
 
-export const TrackBar = (props: TrackBarProps) => {
-  const {
-    bar,
-    style: {
-      barLengthPixel,
-      barOffsetStyle,
-    },
-    onSelectBar,
-    onBarDetails,
-    onDragStart,
-    onResizeMouseDown,
-    onContextMenu,
-    renameInput,
-    menu,
-  } = useTrackBarData(props);
+export const TrackBar = ({ bar, onSelectBar, onBarDetails }: TrackBarProps) => {
+  const barOffsetStyle = `${bar.startAtTick * TICK_WIDTH_PIXEL}px`;
+  const barLengthStyle = `${bar.durationTicks * TICK_WIDTH_PIXEL}px`;
 
   return (
     <div
       key={bar.id}
-      className="absolute"
+      className="absolute rounded-md cursor-pointer"
       style={{
-        width: barLengthPixel,
         left: barOffsetStyle,
-        height: `${TRACK_HEIGHT}px`,
+        width: barLengthStyle,
+        height: '100%',
         backgroundColor: bar.color || 'grey',
-        zIndex: 1, // Ensure TrackBar has a lower z-index than AddTrackMenu
       }}
-      onContextMenu={onContextMenu}
+      onClick={onSelectBar} // Ensure this works without passing arguments
+      onDoubleClick={onBarDetails} // Ensure this works without passing arguments
     >
-      <div className="relative w-full h-full">
-        <div
-          className={`absolute flex flex-col opacity-80 rounded-md cursor-grab h-full w-full`}
-          onClick={() => onSelectBar(bar)}
-          onDoubleClick={() => onBarDetails(bar)}
-          draggable
-          onDragStart={onDragStart}
-        >
-          <div
-            className="flex flex-row pl-2 rounded-t-md text-sm font-bold select-none"
-            style={{
-              height: `${FLATBOARD_BAR_HEADER_HEIGHT}px`,
-              color: 'white',
-            }}
-          >
-            {renameInput.isEnabled ? (
-              <input
-                type="text"
-                className="w-full p-1 mt-1 bg-zinc-300 dark:bg-zinc-800"
-                value={renameInput.value}
-                autoFocus
-                onBlur={renameInput.onInputBlur}
-                onChange={renameInput.onInputChange}
-              />
-            ) : (
-              <span className="select-none font-bold text-white text-sm">
-                {bar.title}
-              </span>
-            )}
-          </div>
-        </div>
-        <div
-          className="absolute z-20 right-0 h-full w-2 cursor-ew-resize"
-          onMouseDown={onResizeMouseDown}
-        />
-
-        {menu.isOpen && (
-          <div className="fixed mt-4 ml-4 z-50 h-fit w-fit">
-            <PopupMenu {...menu} />
-          </div>
-        )}
+      <div className="flex items-center justify-center h-full text-white font-bold">
+        {bar.title}
       </div>
     </div>
   );
