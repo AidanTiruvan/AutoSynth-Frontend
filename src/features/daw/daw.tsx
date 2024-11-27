@@ -1,4 +1,3 @@
-import { BottomBar } from './bottom-bar/bottom-bar'
 import { Dialog } from './dialog/dialog'
 import { Menu } from './menu/menu'
 import { PlayerBar } from './player-bar/player-bar'
@@ -27,9 +26,7 @@ export const DAW = () => {
         <Playlist />
       </div>
 
-      <div>
-        <BottomBar />
-      </div>
+
 
       <Dialog />
     </main>
