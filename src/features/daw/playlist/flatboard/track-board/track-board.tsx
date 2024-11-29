@@ -29,7 +29,7 @@ export const TrackBoard = ({
 
   const handleSelectTick = (tick: number) => {
     dispatch(requestNewTickPosition(tick));
-    dispatch(selectTrack(track));
+    dispatch(selectTrack(track.id));
   };
 
   const handleShowAddMenu = (e: React.MouseEvent) => {
@@ -65,7 +65,9 @@ export const TrackBoard = ({
   return (
     <div
       ref={trackBoardRef}
-      className={`relative ${selectedTrack?.id === track.id ? 'bg-highlight' : ''}`}
+      className={`relative ${
+        selectedTrack?.id === track.id ? 'bg-highlight' : ''
+      }`}
       onDragOver={(e) => e.preventDefault()}
       onDoubleClick={handleShowAddMenu}
     >
@@ -87,8 +89,7 @@ export const TrackBoard = ({
           <TrackBar
             key={bar.id}
             bar={bar}
-            track={track} // Ensure `track` is passed
-            onSelectBar={() => dispatch(selectTrack(track))}
+            track={track} // Pass the track to the TrackBar
             onBarDetails={() => {
               /* Add logic for handling bar details */
             }}

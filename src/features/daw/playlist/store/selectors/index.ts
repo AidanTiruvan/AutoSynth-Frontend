@@ -1,14 +1,22 @@
-import { RootState } from '../../../../../store'
+import { RootState } from '../../../../../store';
+import { Track } from '../../../../../model/track/track';
+import { Bar } from '../../../../../model/bar/bar';
 
-export const selectTracks = (state: RootState) => state.playlist.tracks
+// Selector to get all tracks
+export const selectTracks = (state: RootState): Track[] => state.playlist.tracks;
 
-export const selectSelectedTrack = (state: RootState) =>
-  state.playlist.tracks.find((t) => t.id === state.playlist.selectedTrackId)
+// Selector to get the currently selected track
+export const selectSelectedTrack = (state: RootState): Track | undefined =>
+  state.playlist.tracks.find(
+    (t) => t.id === state.playlist.selectedTrackId
+  );
 
-export const selectSelectedBar = (state: RootState) => {
-  const selectedTrack = selectSelectedTrack(state)
-  if (!selectedTrack) return undefined
-  return selectedTrack.bars.find((b) => b.id === state.playlist.selectedBarId)
-}
-
-export const selectToCopyBar = (state: RootState) => state.playlist.toCopyBar
+// Selector to get the currently selected bar (sub-procedure)
+export const selectSelectedBar = (state: RootState): Bar | undefined => {
+  const selectedTrack = state.playlist.tracks.find(
+    (track) => track.id === state.playlist.selectedSubProcedure?.trackId
+  );
+  return selectedTrack?.bars.find(
+    (bar) => bar.id === state.playlist.selectedSubProcedure?.barId
+  );
+};

@@ -1,30 +1,31 @@
-import { PayloadAction, createSlice } from '@reduxjs/toolkit'
-import { Track } from '../../../../model/track/track'
-import { Bar } from '../../../../model/bar/bar'
-import { TrackColor } from '../../../../model/track/track-color' // Import TrackColor
+import { PayloadAction, createSlice } from '@reduxjs/toolkit';
+import { Track } from '../../../../model/track/track';
+import { Bar } from '../../../../model/bar/bar';
+import { TrackColor } from '../../../../model/track/track-color';
 
 export interface PlaylistSlice {
-  tracks: Track[]
-  selectedTrackId: string | null
-  selectedBarId: string | null
-  flatboardScroll: number
-  toCopyBar: Bar | null
+  tracks: Track[]; // List of all tracks in the playlist
+  selectedTrackId: string | null; // ID of the currently selected track
+  selectedSubProcedure: { trackId: string; barId: string } | null; // Selected sub-procedure (track + bar IDs)
+  flatboardScroll: number; // Scroll position of the flatboard
+  toCopyBar: Bar | null; // Bar to copy during drag-and-drop
 }
 
+// Initial playlist state
 const initialState: PlaylistSlice = {
   tracks: [
     {
       id: '1',
       title: 'Reactor 1',
       color: 'grey',
-      procedurePreset: { 
-        id: 'reactor_1', 
-        operation: 'REACTOR', 
-        name: 'Reactor 1', 
-        color: 'grey', 
-        category: 'chemical' 
+      procedurePreset: {
+        id: 'reactor_1',
+        operation: 'REACTOR',
+        name: 'Reactor 1',
+        color: 'grey',
+        category: 'chemical',
       },
-      bars: [],  // Will now hold sub-procedures as bars
+      bars: [], // Sub-procedures associated with this track
       muted: false,
       soloed: false,
       areThereAnyOtherTrackSoloed: false,
@@ -34,14 +35,14 @@ const initialState: PlaylistSlice = {
       id: '2',
       title: 'Reactor 2',
       color: 'grey',
-      procedurePreset: { 
-        id: 'reactor_2', 
-        operation: 'REACTOR', 
-        name: 'Reactor 2', 
-        color: 'grey', 
-        category: 'chemical' 
+      procedurePreset: {
+        id: 'reactor_2',
+        operation: 'REACTOR',
+        name: 'Reactor 2',
+        color: 'grey',
+        category: 'chemical',
       },
-      bars: [],  // Will now hold sub-procedures as bars
+      bars: [],
       muted: false,
       soloed: false,
       areThereAnyOtherTrackSoloed: false,
@@ -51,14 +52,14 @@ const initialState: PlaylistSlice = {
       id: '3',
       title: 'Reactor 3',
       color: 'grey',
-      procedurePreset: { 
-        id: 'reactor_3', 
-        operation: 'REACTOR', 
-        name: 'Reactor 3', 
-        color: 'grey', 
-        category: 'chemical' 
+      procedurePreset: {
+        id: 'reactor_3',
+        operation: 'REACTOR',
+        name: 'Reactor 3',
+        color: 'grey',
+        category: 'chemical',
       },
-      bars: [],  // Will now hold sub-procedures as bars
+      bars: [],
       muted: false,
       soloed: false,
       areThereAnyOtherTrackSoloed: false,
@@ -66,95 +67,135 @@ const initialState: PlaylistSlice = {
     },
   ],
   selectedTrackId: null,
-  selectedBarId: null,
+  selectedSubProcedure: null,
   flatboardScroll: 0,
   toCopyBar: null,
-}
+};
 
 export const playlistSlice = createSlice({
   name: 'playlist',
   initialState,
   reducers: {
-    // Adds a sub-procedure (as a bar) to an existing reactor track
-    addSubProcedure: (state, action: PayloadAction<{ trackId: string; subProcedure: Bar }>) => {
-      const { trackId, subProcedure } = action.payload
-      const track = state.tracks.find((t) => t.id === trackId)
+    addSubProcedure: (
+      state,
+      action: PayloadAction<{ trackId: string; subProcedure: Bar }>
+    ) => {
+      const { trackId, subProcedure } = action.payload;
+      const track = state.tracks.find((t) => t.id === trackId);
       if (track) {
-        track.bars.push(subProcedure)  // Add the sub-procedure to the track's bars
+        track.bars.push(subProcedure);
       }
     },
 
     removeTrack: (state, action: PayloadAction<string>) => {
-      state.tracks = state.tracks.filter((track) => track.id !== action.payload)
+      state.tracks = state.tracks.filter((track) => track.id !== action.payload);
     },
 
-    selectTrack: (state, action: PayloadAction<Track>) => {
-      state.selectedTrackId = action.payload.id
+    selectTrack: (state, action: PayloadAction<string>) => {
+      console.log('Track selected:', action.payload);
+      state.selectedTrackId = action.payload;
     },
 
-    selectBar: (state, action: PayloadAction<{ trackId: string; barId: string }>) => {
-      state.selectedBarId = action.payload.barId
-      state.selectedTrackId = action.payload.trackId
+    selectSubProcedure: (
+      state,
+      action: PayloadAction<{ trackId: string; barId: string }>
+    ) => {
+      console.log('Sub-procedure selected:', action.payload);
+      state.selectedSubProcedure = action.payload;
     },
 
-    moveBar: (state, action: PayloadAction<{ barId: string; fromTrackId: string; toTrackId: string; newStartAtTick: number }>) => {
-      const fromTrack = state.tracks.find((t) => t.id === action.payload.fromTrackId)
-      const toTrack = state.tracks.find((t) => t.id === action.payload.toTrackId)
+    deselectSubProcedure: (state) => {
+      console.log('Sub-procedure deselected.');
+      state.selectedSubProcedure = null;
+    },
+
+    moveBar: (
+      state,
+      action: PayloadAction<{
+        barId: string;
+        fromTrackId: string;
+        toTrackId: string;
+        newStartAtTick: number;
+      }>
+    ) => {
+      const { barId, fromTrackId, toTrackId, newStartAtTick } = action.payload;
+      const fromTrack = state.tracks.find((t) => t.id === fromTrackId);
+      const toTrack = state.tracks.find((t) => t.id === toTrackId);
+
       if (fromTrack && toTrack) {
-        const barToMove = fromTrack.bars.find((bar) => bar.id === action.payload.barId)
+        const barToMove = fromTrack.bars.find((bar) => bar.id === barId);
         if (barToMove) {
-          // Remove the bar from the original track
-          fromTrack.bars = fromTrack.bars.filter((bar) => bar.id !== action.payload.barId)
-          // Update the bar's start tick and push it into the new track
-          barToMove.startAtTick = action.payload.newStartAtTick
-          toTrack.bars.push(barToMove)
+          fromTrack.bars = fromTrack.bars.filter((bar) => bar.id !== barId);
+          barToMove.startAtTick = newStartAtTick;
+          toTrack.bars.push(barToMove);
         }
       }
     },
 
-    removeBar: (state, action: PayloadAction<{ trackId: string; barId: string }>) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId)
+    removeBar: (
+      state,
+      action: PayloadAction<{ trackId: string; barId: string }>
+    ) => {
+      const track = state.tracks.find((t) => t.id === action.payload.trackId);
       if (track) {
-        track.bars = track.bars.filter((bar) => bar.id !== action.payload.barId)
+        track.bars = track.bars.filter((bar) => bar.id !== action.payload.barId);
       }
     },
 
-    renameBar: (state, action: PayloadAction<{ trackId: string; barId: string; newTitle: string }>) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId)
+    renameBar: (
+      state,
+      action: PayloadAction<{ trackId: string; barId: string; newTitle: string }>
+    ) => {
+      const track = state.tracks.find((t) => t.id === action.payload.trackId);
       if (track) {
-        const bar = track.bars.find((bar) => bar.id === action.payload.barId)
+        const bar = track.bars.find((bar) => bar.id === action.payload.barId);
         if (bar) {
-          bar.title = action.payload.newTitle
+          bar.title = action.payload.newTitle;
         }
       }
     },
 
-    setToCopyBar: (state, action: PayloadAction<Bar>) => {
-      state.toCopyBar = action.payload
-    },
-
-    resizeBar: (state, action: PayloadAction<{ trackId: string; barId: string; newDurationTicks: number }>) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId)
+    resizeBar: (
+      state,
+      action: PayloadAction<{ trackId: string; barId: string; newDurationTicks: number }>
+    ) => {
+      const track = state.tracks.find((t) => t.id === action.payload.trackId);
       if (track) {
-        const bar = track.bars.find((bar) => bar.id === action.payload.barId)
+        const bar = track.bars.find((bar) => bar.id === action.payload.barId);
         if (bar) {
-          bar.durationTicks = action.payload.newDurationTicks
+          bar.durationTicks = action.payload.newDurationTicks;
         }
       }
     },
 
-    setTrackColor: (state, action: PayloadAction<{ trackId: string; color: TrackColor }>) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId)
+    setTrackColor: (
+      state,
+      action: PayloadAction<{ trackId: string; color: TrackColor }>
+    ) => {
+      const track = state.tracks.find((t) => t.id === action.payload.trackId);
       if (track) {
-        track.color = action.payload.color
+        track.color = action.payload.color;
       }
     },
 
     setFlatboardScroll: (state, action: PayloadAction<number>) => {
-      state.flatboardScroll = action.payload
+      state.flatboardScroll = action.payload;
     },
   },
-})
+});
 
-export const { addSubProcedure, removeTrack, selectTrack, removeBar, renameBar, setToCopyBar, resizeBar, moveBar, selectBar, setTrackColor, setFlatboardScroll } = playlistSlice.actions
-export default playlistSlice.reducer
+export const {
+  addSubProcedure,
+  removeTrack,
+  selectTrack,
+  selectSubProcedure,
+  deselectSubProcedure,
+  removeBar,
+  renameBar,
+  resizeBar,
+  moveBar,
+  setTrackColor,
+  setFlatboardScroll,
+} = playlistSlice.actions;
+
+export default playlistSlice.reducer;

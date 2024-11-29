@@ -1,28 +1,28 @@
-import { TrackItem } from './track-item/track-item'
-import { useDispatch, useSelector } from 'react-redux'
-import { selectSelectedTrack, selectTracks } from '../store/selectors'
-import { Track } from '../../../../model/track/track'
-import { selectTrack } from '../store/playlist-slice'
+import { TrackItem } from './track-item/track-item';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectSelectedTrack, selectTracks } from '../store/selectors';
+import { selectTrack } from '../store/playlist-slice';
+import { Track } from '../../../../model/track/track'; // Ensure Track type is imported
 
 export const TrackList = () => {
-  const tracks = useSelector(selectTracks) // Assuming this already holds 3 static reactor tracks
-  const selectedTrack = useSelector(selectSelectedTrack)
-  const dispatch = useDispatch()
-  
-  const handleSelectTrack = (track: Track) => {
-    dispatch(selectTrack(track))
-  }
+  const tracks: Track[] = useSelector(selectTracks); // Explicitly type tracks as Track[]
+  const selectedTrack = useSelector(selectSelectedTrack);
+  const dispatch = useDispatch();
+
+  const handleSelectTrack = (trackId: string) => {
+    dispatch(selectTrack(trackId)); // Pass track ID to the Redux action
+  };
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      {tracks.map((track: Track) => (
+      {tracks.map((track) => (
         <TrackItem
           key={track.id}
           track={track}
           selectedTrack={selectedTrack}
-          onSelectTrack={handleSelectTrack}
+          onSelectTrack={() => handleSelectTrack(track.id)} // Pass track ID
         />
       ))}
     </div>
-  )
-}
+  );
+};
