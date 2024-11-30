@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
-import { deselectSubProcedure } from '../playlist/store/playlist-slice';
+import { deselectSubProcedure, removeBar } from '../playlist/store/playlist-slice';
 
 export const BottomPanel = () => {
   const dispatch = useDispatch();
@@ -12,6 +12,18 @@ export const BottomPanel = () => {
 
   const handleClose = () => {
     dispatch(deselectSubProcedure());
+  };
+
+  const handleDelete = () => {
+    if (selectedSubProcedure) {
+      dispatch(
+        removeBar({
+          trackId: selectedSubProcedure.trackId,
+          barId: selectedSubProcedure.barId,
+        })
+      );
+      dispatch(deselectSubProcedure()); // Close the panel after deletion
+    }
   };
 
   return (
@@ -30,17 +42,31 @@ export const BottomPanel = () => {
       </div>
       <div className="mt-4">
         <p>
-          <span className="font-semibold">Track ID:</span>{' '}
+          <span className="font-semibold">Reactor:</span>{' '}
           {selectedSubProcedure.trackId}
         </p>
         <p>
-          <span className="font-semibold">Sub-Procedure ID:</span>{' '}
+          <span className="font-semibold">ID:</span>{' '}
           {selectedSubProcedure.barId}
         </p>
         <p>
-          <span className="font-semibold">Title:</span>{' '}
+          <span className="font-semibold">Sub-Procedure:</span>{' '}
           {selectedSubProcedure.title || 'Untitled'}
         </p>
+      </div>
+      <div
+        className="absolute bottom-6 right-6"
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <button
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          onClick={handleDelete}
+        >
+          Delete Sub-Procedure
+        </button>
       </div>
     </div>
   );

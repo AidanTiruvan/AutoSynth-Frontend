@@ -138,6 +138,7 @@ export const playlistSlice = createSlice({
         track.bars = track.bars.filter((bar) => bar.id !== action.payload.barId);
       }
     },
+    
 
     renameBar: (
       state,
