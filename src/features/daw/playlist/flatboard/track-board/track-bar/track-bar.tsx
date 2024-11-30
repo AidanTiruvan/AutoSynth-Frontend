@@ -16,7 +16,7 @@ export const TrackBar = ({
   const dispatch = useDispatch();
 
   const handleSelectBar = () => {
-    dispatch(selectSubProcedure({ trackId: track.id, barId: bar.id }));
+    dispatch(selectSubProcedure({ trackId: track.id, barId: bar.id, title: bar.title })); // Now includes the title
   };
 
   return (

@@ -17,7 +17,7 @@ export const BottomPanel = () => {
   return (
     <div
       className="fixed bottom-0 left-0 w-full bg-gray-900 text-white p-6 shadow-lg"
-      style={{ height: '40vh' }} // Adjust the height of the panel
+      style={{ height: '45vh' }} // Adjust the height of the panel
     >
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-bold">Sub-Procedure Details</h3>
@@ -28,9 +28,20 @@ export const BottomPanel = () => {
           Close
         </button>
       </div>
-      <p className="mt-4">Track ID: {selectedSubProcedure.trackId}</p>
-      <p>Sub-Procedure ID: {selectedSubProcedure.barId}</p>
-      {/* Add dynamic content for each unique sub-procedure here */}
+      <div className="mt-4">
+        <p>
+          <span className="font-semibold">Track ID:</span>{' '}
+          {selectedSubProcedure.trackId}
+        </p>
+        <p>
+          <span className="font-semibold">Sub-Procedure ID:</span>{' '}
+          {selectedSubProcedure.barId}
+        </p>
+        <p>
+          <span className="font-semibold">Title:</span>{' '}
+          {selectedSubProcedure.title || 'Untitled'}
+        </p>
+      </div>
     </div>
   );
 };

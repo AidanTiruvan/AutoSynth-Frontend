@@ -6,7 +6,7 @@ import { TrackColor } from '../../../../model/track/track-color';
 export interface PlaylistSlice {
   tracks: Track[]; // List of all tracks in the playlist
   selectedTrackId: string | null; // ID of the currently selected track
-  selectedSubProcedure: { trackId: string; barId: string } | null; // Selected sub-procedure (track + bar IDs)
+  selectedSubProcedure: { trackId: string; barId: string; title: string } | null; // Include title
   flatboardScroll: number; // Scroll position of the flatboard
   toCopyBar: Bar | null; // Bar to copy during drag-and-drop
 }
@@ -92,20 +92,17 @@ export const playlistSlice = createSlice({
     },
 
     selectTrack: (state, action: PayloadAction<string>) => {
-      console.log('Track selected:', action.payload);
       state.selectedTrackId = action.payload;
     },
 
     selectSubProcedure: (
       state,
-      action: PayloadAction<{ trackId: string; barId: string }>
+      action: PayloadAction<{ trackId: string; barId: string; title: string }>
     ) => {
-      console.log('Sub-procedure selected:', action.payload);
-      state.selectedSubProcedure = action.payload;
+      state.selectedSubProcedure = action.payload; // Updated to include title
     },
 
     deselectSubProcedure: (state) => {
-      console.log('Sub-procedure deselected.');
       state.selectedSubProcedure = null;
     },
 
