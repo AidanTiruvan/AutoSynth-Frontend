@@ -4,14 +4,13 @@ import { Bar } from '../../../../model/bar/bar';
 import { TrackColor } from '../../../../model/track/track-color';
 
 export interface PlaylistSlice {
-  tracks: Track[]; // List of all tracks in the playlist
-  selectedTrackId: string | null; // ID of the currently selected track
-  selectedSubProcedure: { trackId: string; barId: string; title: string } | null; // Include title
-  flatboardScroll: number; // Scroll position of the flatboard
-  toCopyBar: Bar | null; // Bar to copy during drag-and-drop
+  tracks: Track[];
+  selectedTrackId: string | null;
+  selectedSubProcedure: { trackId: string; barId: string; title: string } | null;
+  flatboardScroll: number;
+  toCopyBar: Bar | null;
 }
 
-// Initial playlist state
 const initialState: PlaylistSlice = {
   tracks: [
     {
@@ -25,7 +24,7 @@ const initialState: PlaylistSlice = {
         color: 'grey',
         category: 'chemical',
       },
-      bars: [], // Sub-procedures associated with this track
+      bars: [],
       muted: false,
       soloed: false,
       areThereAnyOtherTrackSoloed: false,
@@ -81,10 +80,11 @@ export const playlistSlice = createSlice({
       action: PayloadAction<{ trackId: string; subProcedure: Bar }>
     ) => {
       const { trackId, subProcedure } = action.payload;
-      const track = state.tracks.find((t) => t.id === trackId);
-      if (track) {
-        track.bars.push(subProcedure);
-      }
+      state.tracks = state.tracks.map((track) =>
+        track.id === trackId
+          ? { ...track, bars: [...track.bars, subProcedure] }
+          : track
+      );
     },
 
     removeTrack: (state, action: PayloadAction<string>) => {
@@ -99,7 +99,7 @@ export const playlistSlice = createSlice({
       state,
       action: PayloadAction<{ trackId: string; barId: string; title: string }>
     ) => {
-      state.selectedSubProcedure = action.payload; // Updated to include title
+      state.selectedSubProcedure = action.payload;
     },
 
     deselectSubProcedure: (state) => {
@@ -122,9 +122,20 @@ export const playlistSlice = createSlice({
       if (fromTrack && toTrack) {
         const barToMove = fromTrack.bars.find((bar) => bar.id === barId);
         if (barToMove) {
-          fromTrack.bars = fromTrack.bars.filter((bar) => bar.id !== barId);
-          barToMove.startAtTick = newStartAtTick;
-          toTrack.bars.push(barToMove);
+          const updatedFromBars = fromTrack.bars.filter(
+            (bar) => bar.id !== barId
+          );
+          const updatedToBars = [
+            ...toTrack.bars,
+            { ...barToMove, startAtTick: newStartAtTick },
+          ];
+          state.tracks = state.tracks.map((track) =>
+            track.id === fromTrackId
+              ? { ...track, bars: updatedFromBars }
+              : track.id === toTrackId
+              ? { ...track, bars: updatedToBars }
+              : track
+          );
         }
       }
     },
@@ -133,51 +144,115 @@ export const playlistSlice = createSlice({
       state,
       action: PayloadAction<{ trackId: string; barId: string }>
     ) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId);
-      if (track) {
-        track.bars = track.bars.filter((bar) => bar.id !== action.payload.barId);
-      }
+      state.tracks = state.tracks.map((track) =>
+        track.id === action.payload.trackId
+          ? {
+              ...track,
+              bars: track.bars.filter(
+                (bar) => bar.id !== action.payload.barId
+              ),
+            }
+          : track
+      );
     },
-    
 
     renameBar: (
       state,
       action: PayloadAction<{ trackId: string; barId: string; newTitle: string }>
     ) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId);
-      if (track) {
-        const bar = track.bars.find((bar) => bar.id === action.payload.barId);
-        if (bar) {
-          bar.title = action.payload.newTitle;
-        }
-      }
+      state.tracks = state.tracks.map((track) =>
+        track.id === action.payload.trackId
+          ? {
+              ...track,
+              bars: track.bars.map((bar) =>
+                bar.id === action.payload.barId
+                  ? { ...bar, title: action.payload.newTitle }
+                  : bar
+              ),
+            }
+          : track
+      );
     },
 
     resizeBar: (
       state,
       action: PayloadAction<{ trackId: string; barId: string; newDurationTicks: number }>
     ) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId);
-      if (track) {
-        const bar = track.bars.find((bar) => bar.id === action.payload.barId);
-        if (bar) {
-          bar.durationTicks = action.payload.newDurationTicks;
-        }
-      }
+      state.tracks = state.tracks.map((track) =>
+        track.id === action.payload.trackId
+          ? {
+              ...track,
+              bars: track.bars.map((bar) =>
+                bar.id === action.payload.barId
+                  ? { ...bar, durationTicks: action.payload.newDurationTicks }
+                  : bar
+              ),
+            }
+          : track
+      );
     },
 
     setTrackColor: (
       state,
       action: PayloadAction<{ trackId: string; color: TrackColor }>
     ) => {
-      const track = state.tracks.find((t) => t.id === action.payload.trackId);
-      if (track) {
-        track.color = action.payload.color;
-      }
+      state.tracks = state.tracks.map((track) =>
+        track.id === action.payload.trackId
+          ? { ...track, color: action.payload.color }
+          : track
+      );
     },
 
     setFlatboardScroll: (state, action: PayloadAction<number>) => {
       state.flatboardScroll = action.payload;
+    },
+
+    moveBarLeft: (
+      state,
+      action: PayloadAction<{ trackId: string; barId: string }>
+    ) => {
+      state.tracks = state.tracks.map((track) => {
+        if (track.id !== action.payload.trackId) return track;
+        const index = track.bars.findIndex((bar) => bar.id === action.payload.barId);
+        if (index > 0) {
+          const updatedBars = [...track.bars];
+          [updatedBars[index - 1], updatedBars[index]] = [
+            updatedBars[index],
+            updatedBars[index - 1],
+          ];
+          // Swap startAtTick values
+          const tempTick = updatedBars[index - 1].startAtTick;
+          updatedBars[index - 1].startAtTick = updatedBars[index].startAtTick;
+          updatedBars[index].startAtTick = tempTick;
+
+          return { ...track, bars: updatedBars };
+        }
+        return track;
+      });
+    },
+
+    moveBarRight: (
+      state,
+      action: PayloadAction<{ trackId: string; barId: string }>
+    ) => {
+      state.tracks = state.tracks.map((track) => {
+        if (track.id !== action.payload.trackId) return track;
+        const index = track.bars.findIndex((bar) => bar.id === action.payload.barId);
+        if (index < track.bars.length - 1) {
+          const updatedBars = [...track.bars];
+          [updatedBars[index + 1], updatedBars[index]] = [
+            updatedBars[index],
+            updatedBars[index + 1],
+          ];
+          // Swap startAtTick values
+          const tempTick = updatedBars[index + 1].startAtTick;
+          updatedBars[index + 1].startAtTick = updatedBars[index].startAtTick;
+          updatedBars[index].startAtTick = tempTick;
+
+          return { ...track, bars: updatedBars };
+        }
+        return track;
+      });
     },
   },
 });
@@ -188,6 +263,8 @@ export const {
   selectTrack,
   selectSubProcedure,
   deselectSubProcedure,
+  moveBarLeft,
+  moveBarRight,
   removeBar,
   renameBar,
   resizeBar,

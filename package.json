@@ -14,6 +14,8 @@
     "choco": "^0.2.1",
     "file-saver": "^2.0.5",
     "react": "^18.2.0",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.2.0",
     "react-icons": "^5.0.1",
     "react-redux": "^9.1.0",

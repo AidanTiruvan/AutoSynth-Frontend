@@ -7,10 +7,14 @@ import { selectSubProcedure } from '../../../store/playlist-slice';
 export const TrackBar = ({
   bar,
   track,
+  onMoveLeft,
+  onMoveRight,
   onBarDetails,
 }: {
   bar: Bar;
   track: Track;
+  onMoveLeft: () => void;
+  onMoveRight: () => void;
   onBarDetails: () => void;
 }) => {
   const dispatch = useDispatch();
@@ -34,6 +38,26 @@ export const TrackBar = ({
     >
       <div className="flex items-center justify-center h-full text-white font-bold">
         {bar.title}
+      </div>
+      <div className="absolute top-0 right-0 flex gap-1">
+        <button
+          className="bg-blue-500 text-white px-1 py-1 rounded hover:bg-blue-600"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering the parent onClick
+            onMoveLeft();
+          }}
+        >
+          ←
+        </button>
+        <button
+          className="bg-green-500 text-white px-1 py-1 rounded hover:bg-green-600"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering the parent onClick
+            onMoveRight();
+          }}
+        >
+          →
+        </button>
       </div>
     </div>
   );

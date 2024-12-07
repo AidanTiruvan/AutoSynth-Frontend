@@ -4,7 +4,7 @@ import { Track } from '../../../../../model/track/track';
 import { Bar } from '../../../../../model/bar/bar';
 import { TrackBar } from './track-bar/track-bar';
 import { requestNewTickPosition } from '../../../playlist-header/store/playlist-header-slice';
-import { selectTrack } from '../../store/playlist-slice';
+import { selectTrack, moveBarLeft, moveBarRight } from '../../store/playlist-slice';
 import { MixGrid } from '../../../common/components/mix-grid/mix-grid';
 import { TRACK_HEIGHT } from '../../constants';
 import { useEffect, useRef, useState } from 'react';
@@ -62,6 +62,16 @@ export const TrackBoard = ({
     ? Math.max(...track.bars.map((bar) => bar.startAtTick + bar.durationTicks))
     : 0;
 
+  const handleMoveLeft = (barId: string) => {
+    dispatch(moveBarLeft({ trackId: track.id, barId }));
+  };
+
+  const handleMoveRight = (barId: string) => {
+    dispatch(moveBarRight({ trackId: track.id, barId }));
+  };
+
+  console.log('TrackBoard bars:', track.bars);
+
   return (
     <div
       ref={trackBoardRef}
@@ -89,7 +99,9 @@ export const TrackBoard = ({
           <TrackBar
             key={bar.id}
             bar={bar}
-            track={track} // Pass the track to the TrackBar
+            track={track}
+            onMoveLeft={() => handleMoveLeft(bar.id)}
+            onMoveRight={() => handleMoveRight(bar.id)}
             onBarDetails={() => {
               /* Add logic for handling bar details */
             }}
