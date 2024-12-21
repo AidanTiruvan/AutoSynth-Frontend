@@ -4,6 +4,16 @@ import { useDispatch } from 'react-redux';
 import { TICK_WIDTH_PIXEL } from '../../../constants';
 import { selectSubProcedure } from '../../../store/playlist-slice';
 
+// Utility function to darken a color
+const darkenColor = (color: string, amount: number) => {
+  const colorValue = color.startsWith('#') ? color.slice(1) : color;
+  const num = parseInt(colorValue, 16);
+  const r = Math.max((num >> 16) - amount, 0);
+  const g = Math.max(((num >> 8) & 0x00ff) - amount, 0);
+  const b = Math.max((num & 0x0000ff) - amount, 0);
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 export const TrackBar = ({
   bar,
   track,
@@ -18,6 +28,7 @@ export const TrackBar = ({
   onBarDetails: () => void;
 }) => {
   const dispatch = useDispatch();
+  const buttonColor = bar.color ? darkenColor(bar.color, 50) : 'grey';
 
   const handleSelectBar = () => {
     dispatch(selectSubProcedure({ trackId: track.id, barId: bar.id, title: bar.title }));
@@ -42,7 +53,7 @@ export const TrackBar = ({
       <div className="absolute top-0 right-0 flex gap-1">
         <button
           className="text-white px-1 py-0.5 rounded text-sm"
-          style={{ backgroundColor: bar.color || 'grey' }}
+          style={{ backgroundColor: buttonColor }}
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the parent onClick
             onMoveLeft();
@@ -52,7 +63,7 @@ export const TrackBar = ({
         </button>
         <button
           className="text-white px-1 py-0.5 rounded text-sm"
-          style={{ backgroundColor: bar.color || 'grey' }}
+          style={{ backgroundColor: buttonColor }}
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the parent onClick
             onMoveRight();
