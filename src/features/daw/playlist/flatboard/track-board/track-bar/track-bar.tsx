@@ -41,7 +41,8 @@ export const TrackBar = ({
       </div>
       <div className="absolute top-0 right-0 flex gap-1">
         <button
-          className="bg-blue-500 text-white px-1 py-0.5 rounded text-sm"
+          className="text-white px-1 py-0.5 rounded text-sm"
+          style={{ backgroundColor: bar.color || 'grey' }}
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the parent onClick
             onMoveLeft();
@@ -50,7 +51,8 @@ export const TrackBar = ({
           ←
         </button>
         <button
-          className="bg-green-500 text-white px-1 py-0.5 rounded text-sm"
+          className="text-white px-1 py-0.5 rounded text-sm"
+          style={{ backgroundColor: bar.color || 'grey' }}
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the parent onClick
             onMoveRight();
