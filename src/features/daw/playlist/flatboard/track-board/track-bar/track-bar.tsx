@@ -1,7 +1,7 @@
 import { Bar } from '../../../../../../model/bar/bar';
 import { Track } from '../../../../../../model/track/track';
 import { useDispatch } from 'react-redux';
-import { TICK_WIDTH_PIXEL } from '../../../constants'; // Ensure this file exists
+import { TICK_WIDTH_PIXEL } from '../../../constants';
 import { selectSubProcedure } from '../../../store/playlist-slice';
 
 export const TrackBar = ({
@@ -20,7 +20,7 @@ export const TrackBar = ({
   const dispatch = useDispatch();
 
   const handleSelectBar = () => {
-    dispatch(selectSubProcedure({ trackId: track.id, barId: bar.id, title: bar.title })); // Now includes the title
+    dispatch(selectSubProcedure({ trackId: track.id, barId: bar.id, title: bar.title }));
   };
 
   return (
@@ -41,7 +41,7 @@ export const TrackBar = ({
       </div>
       <div className="absolute top-0 right-0 flex gap-1">
         <button
-          className="bg-blue-500 text-white px-1 py-1 rounded hover:bg-blue-600"
+          className="bg-blue-500 text-white px-1 py-0.5 rounded text-sm"
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the parent onClick
             onMoveLeft();
@@ -50,7 +50,7 @@ export const TrackBar = ({
           ←
         </button>
         <button
-          className="bg-green-500 text-white px-1 py-1 rounded hover:bg-green-600"
+          className="bg-green-500 text-white px-1 py-0.5 rounded text-sm"
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering the parent onClick
             onMoveRight();
