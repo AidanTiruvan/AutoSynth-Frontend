@@ -213,23 +213,33 @@ export const playlistSlice = createSlice({
     ) => {
       state.tracks = state.tracks.map((track) => {
         if (track.id !== action.payload.trackId) return track;
-        const index = track.bars.findIndex((bar) => bar.id === action.payload.barId);
-        if (index > 0) {
-          const updatedBars = [...track.bars];
-          [updatedBars[index - 1], updatedBars[index]] = [
-            updatedBars[index],
-            updatedBars[index - 1],
-          ];
-          // Swap startAtTick values
-          const tempTick = updatedBars[index - 1].startAtTick;
-          updatedBars[index - 1].startAtTick = updatedBars[index].startAtTick;
-          updatedBars[index].startAtTick = tempTick;
-
-          return { ...track, bars: updatedBars };
+    
+        const barIndex = track.bars.findIndex((bar) => bar.id === action.payload.barId);
+        if (barIndex > -1) {
+          const currentBar = track.bars[barIndex];
+          const targetStartAtTick = currentBar.startAtTick - 4; // Calculate the new start position
+    
+          // Check if the targetStartAtTick is a valid empty space (no overlapping bars)
+          const isSpaceEmpty = !track.bars.some(
+            (bar) =>
+              bar.id !== currentBar.id && // Exclude the current bar from the check
+              bar.startAtTick < targetStartAtTick + currentBar.durationTicks &&
+              bar.startAtTick + bar.durationTicks > targetStartAtTick
+          );
+    
+          if (isSpaceEmpty && targetStartAtTick >= 0) {
+            // Update the bar's startAtTick if the space is valid
+            const updatedBars = [...track.bars];
+            updatedBars[barIndex] = { ...currentBar, startAtTick: targetStartAtTick };
+            return { ...track, bars: updatedBars };
+          }
         }
+    
         return track;
       });
     },
+    
+    
 
     moveBarRight: (
       state,
@@ -244,7 +254,7 @@ export const playlistSlice = createSlice({
             updatedBars[index],
             updatedBars[index + 1],
           ];
-          // Swap startAtTick values
+
           const tempTick = updatedBars[index + 1].startAtTick;
           updatedBars[index + 1].startAtTick = updatedBars[index].startAtTick;
           updatedBars[index].startAtTick = tempTick;

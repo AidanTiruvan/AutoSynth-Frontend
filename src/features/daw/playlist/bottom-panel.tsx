@@ -11,7 +11,7 @@ const darkenColor = (color: string, amount: number) => {
   const r = Math.max((num >> 16) - amount, 0);
   const g = Math.max(((num >> 8) & 0x00ff) - amount, 0);
   const b = Math.max((num & 0x0000ff) - amount, 0);
-  return `rgba(${r}, ${g}, ${b}, 0.8)`; // Added opacity for translucency
+  return `rgba(${r}, ${g}, ${b}, 0.8)`; // Add opacity for translucency
 };
 
 export const BottomPanel = () => {
@@ -42,30 +42,39 @@ export const BottomPanel = () => {
       className="fixed bottom-0 left-0 w-full text-white p-6 shadow-lg"
       style={{
         height: '45vh',
-        backgroundColor: panelColor, // Add translucent background color
-        backdropFilter: 'blur(18px)', // Add blur effect
-        border: '1px solid rgba(255, 255, 255, 0.3)', // Optional border for a frosted-glass effect
+        backgroundColor: panelColor,
+        backdropFilter: 'blur(18px)',
+        border: '1px solid rgba(255, 255, 255, 0.3)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-bold">Sub-Procedure Details</h3>
-        <button
-          className="text-red-500 hover:text-red-700"
-          onClick={handleClose}
-        >
-          Close
-        </button>
+      <div>
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-bold">Sub-Procedure Details</h3>
+          <button
+            className="text-red-500 hover:text-red-700"
+            onClick={handleClose}
+          >
+            Close
+          </button>
+        </div>
+        <p className="mt-0 text-lg font-bold">{selectedSubProcedure.title}</p>
+        <p className="mt-0 text-sm text-gray-300">Reactor: {track.title}</p>
       </div>
-      <p className="mt-0 text-lg font-bold">{selectedSubProcedure.title}</p>
-      <p className="mt-0 text-sm text-gray-300">Reactor: {track.title}</p>
-      <p className="absolute bottom-6 left-6 text-sm text-gray-300">
-        ID: {selectedSubProcedure.barId}
-      </p>
 
-      <div className="mt-4 flex justify-end gap-2">
+      <div className="relative">
+        <p className="absolute bottom-6 left-1 text-sm text-gray-300">
+          ID: {selectedSubProcedure.barId}
+        </p>
         <button
-          className="bg-red-500 text-white px-4 py-2 rounded"
+          className="absolute bottom-6 right-1 bg-red-500 text-white px-4 py-2 rounded shadow-md hover:bg-red-600 active:bg-red-700 focus:outline-none"
           onClick={handleDelete}
+          style={{
+            backgroundColor: '#e53e3e', // Ensure consistent red color
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          }}
         >
           Delete Sub-Procedure
         </button>
