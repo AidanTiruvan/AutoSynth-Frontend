@@ -3,5 +3,9 @@ export type Bar = {
   title: string;
   startAtTick: number;
   durationTicks: number;
-  color?: string;  // Add color property here
+  color?: string;
+
+  // New optional properties:
+  chemical?: string;
+  volume?: number;
 };

@@ -71,6 +71,49 @@ const initialState: PlaylistSlice = {
   toCopyBar: null,
 };
 
+// ---------------------------------
+// Chemical Configuration
+// ---------------------------------
+// We store the dispensing properties here so they’re easy to update.
+const CHEMICAL_CONFIG: Record<
+  string,
+  { baseTime: number; additionalTimePer10: number; density: number }
+> = {
+  Water: { density: 1.0, baseTime: 60, additionalTimePer10: 10 },
+  Ethanol: { density: 0.789, baseTime: 60, additionalTimePer10: 8 },
+  Acetone: { density: 0.791, baseTime: 60, additionalTimePer10: 8 },
+  SodiumChloride: { density: 2.17, baseTime: 60, additionalTimePer10: 15 },
+  GlucoseSolution: { density: 1.2, baseTime: 60, additionalTimePer10: 12 },
+  SulfuricAcid: { density: 1.84, baseTime: 60, additionalTimePer10: 20 },
+  HydrogenPeroxide: { density: 1.1, baseTime: 60, additionalTimePer10: 12 },
+  Glycerol: { density: 1.26, baseTime: 60, additionalTimePer10: 18 },
+  Methanol: { density: 0.791, baseTime: 60, additionalTimePer10: 8 },
+  Chloroform: { density: 1.49, baseTime: 60, additionalTimePer10: 18 },
+};
+
+// ---------------------------------
+// Helper Functions
+// ---------------------------------
+const SECONDS_PER_TICK = 3.75; // 1 tick = 3.75 seconds
+/**
+ * Calculates the total dispense time in seconds based on the chemical config.
+ * For sub-procedures, we assume user enters volume (mL), no rounding, purely proportional.
+ */
+function calculateDispenseTimeSeconds(chemical: string, volume: number): number {
+  const config = CHEMICAL_CONFIG[chemical];
+  if (!config) {
+    // If chemical not found, default to 60 seconds to avoid errors
+    return 60;
+  }
+  // Example formula: totalTime = baseTime + (volume / 10) * additionalTimePer10
+  // No rounding — purely proportional
+  const { baseTime, additionalTimePer10 } = config;
+  return baseTime + (volume / 10) * additionalTimePer10;
+}
+
+// ---------------------------------
+// Slice Definition
+// ---------------------------------
 export const playlistSlice = createSlice({
   name: 'playlist',
   initialState,
@@ -176,7 +219,11 @@ export const playlistSlice = createSlice({
 
     resizeBar: (
       state,
-      action: PayloadAction<{ trackId: string; barId: string; newDurationTicks: number }>
+      action: PayloadAction<{
+        trackId: string;
+        barId: string;
+        newDurationTicks: number;
+      }>
     ) => {
       state.tracks = state.tracks.map((track) =>
         track.id === action.payload.trackId
@@ -213,33 +260,35 @@ export const playlistSlice = createSlice({
     ) => {
       state.tracks = state.tracks.map((track) => {
         if (track.id !== action.payload.trackId) return track;
-    
-        const barIndex = track.bars.findIndex((bar) => bar.id === action.payload.barId);
+
+        const barIndex = track.bars.findIndex(
+          (bar) => bar.id === action.payload.barId
+        );
         if (barIndex > -1) {
           const currentBar = track.bars[barIndex];
-          const targetStartAtTick = currentBar.startAtTick - 4; // Calculate the new start position
-    
-          // Check if the targetStartAtTick is a valid empty space (no overlapping bars)
+          const targetStartAtTick = currentBar.startAtTick - 4; // Move left by 4 ticks
+
+          // Check if the targetStartAtTick is a valid empty space (no overlap)
           const isSpaceEmpty = !track.bars.some(
             (bar) =>
-              bar.id !== currentBar.id && // Exclude the current bar from the check
+              bar.id !== currentBar.id &&
               bar.startAtTick < targetStartAtTick + currentBar.durationTicks &&
               bar.startAtTick + bar.durationTicks > targetStartAtTick
           );
-    
+
           if (isSpaceEmpty && targetStartAtTick >= 0) {
-            // Update the bar's startAtTick if the space is valid
             const updatedBars = [...track.bars];
-            updatedBars[barIndex] = { ...currentBar, startAtTick: targetStartAtTick };
+            updatedBars[barIndex] = {
+              ...currentBar,
+              startAtTick: targetStartAtTick,
+            };
             return { ...track, bars: updatedBars };
           }
         }
-    
+
         return track;
       });
     },
-    
-    
 
     moveBarRight: (
       state,
@@ -247,7 +296,9 @@ export const playlistSlice = createSlice({
     ) => {
       state.tracks = state.tracks.map((track) => {
         if (track.id !== action.payload.trackId) return track;
-        const index = track.bars.findIndex((bar) => bar.id === action.payload.barId);
+        const index = track.bars.findIndex(
+          (bar) => bar.id === action.payload.barId
+        );
         if (index < track.bars.length - 1) {
           const updatedBars = [...track.bars];
           [updatedBars[index + 1], updatedBars[index]] = [
@@ -255,13 +306,59 @@ export const playlistSlice = createSlice({
             updatedBars[index + 1],
           ];
 
+          // Swap startAtTick to keep correct timeline positions
           const tempTick = updatedBars[index + 1].startAtTick;
-          updatedBars[index + 1].startAtTick = updatedBars[index].startAtTick;
+          updatedBars[index + 1].startAtTick =
+            updatedBars[index].startAtTick;
           updatedBars[index].startAtTick = tempTick;
 
           return { ...track, bars: updatedBars };
         }
         return track;
+      });
+    },
+
+    // ---------------------------------
+    // NEW ACTION: Update Dispense Params
+    // ---------------------------------
+    updateDispenseParams: (
+      state,
+      action: PayloadAction<{
+        trackId: string;
+        barId: string;
+        chemical: string;
+        volume: number;
+      }>
+    ) => {
+      const { trackId, barId, chemical, volume } = action.payload;
+
+      state.tracks = state.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+
+        const updatedBars = track.bars.map((bar) => {
+          if (bar.id !== barId) return bar;
+
+          // Prevent negative volumes
+          const safeVolume = volume < 0 ? 0 : volume;
+
+          // Calculate total dispensing time (in seconds)
+          const totalTimeSeconds = calculateDispenseTimeSeconds(
+            chemical,
+            safeVolume
+          );
+
+          // Convert to ticks (1 tick = 3.75s)
+          const newDurationTicks = totalTimeSeconds / SECONDS_PER_TICK;
+
+          return {
+            ...bar,
+            chemical,
+            volume: safeVolume,
+            durationTicks: newDurationTicks,
+          };
+        });
+
+        return { ...track, bars: updatedBars };
       });
     },
   },
@@ -281,6 +378,7 @@ export const {
   moveBar,
   setTrackColor,
   setFlatboardScroll,
+  updateDispenseParams, // export the new action
 } = playlistSlice.actions;
 
 export default playlistSlice.reducer;
