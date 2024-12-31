@@ -1,9 +1,10 @@
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
 import {
   deselectSubProcedure,
   removeBar,
-  updateDispenseParams, // <-- Import our new action
+  updateDispenseParams,
 } from '../playlist/store/playlist-slice';
 
 const darkenColor = (color: string, amount: number) => {
@@ -15,7 +16,7 @@ const darkenColor = (color: string, amount: number) => {
   return `rgba(${r}, ${g}, ${b}, 0.8)`; // Add opacity for translucency
 };
 
-// Optional: chemicals for dropdown
+// Example chemicals for dropdown
 const CHEMICAL_OPTIONS = [
   { label: 'Water', value: 'Water' },
   { label: 'Ethanol', value: 'Ethanol' },
@@ -29,8 +30,12 @@ const CHEMICAL_OPTIONS = [
   { label: 'Chloroform', value: 'Chloroform' },
 ];
 
-export const BottomPanel = () => {
+// 1 tick = 0.9375 seconds, so 32 ticks = 30 seconds
+const SECONDS_PER_TICK = 0.9375;
+
+export const BottomPanel: React.FC = () => {
   const dispatch = useDispatch();
+
   const selectedSubProcedure = useSelector(
     (state: RootState) => state.playlist.selectedSubProcedure
   );
@@ -39,13 +44,17 @@ export const BottomPanel = () => {
   );
   const bar = track?.bars.find((b) => b.id === selectedSubProcedure?.barId);
 
+  useEffect(() => {
+    console.log('BottomPanel: selectedSubProcedure changed:', selectedSubProcedure);
+  }, [selectedSubProcedure]);
+
   if (!selectedSubProcedure || !track || !bar) return null;
 
   // -------------------------------
   // Handlers
   // -------------------------------
   const handleDelete = () => {
-    dispatch(removeBar({ trackId: track.id, barId: selectedSubProcedure.barId }));
+    dispatch(removeBar({ trackId: track.id, barId: bar.id }));
     dispatch(deselectSubProcedure());
   };
 
@@ -53,7 +62,6 @@ export const BottomPanel = () => {
     dispatch(deselectSubProcedure());
   };
 
-  // Update chemical in Redux
   const handleChemicalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch(
       updateDispenseParams({
@@ -65,7 +73,6 @@ export const BottomPanel = () => {
     );
   };
 
-  // Update volume in Redux (prevent negatives)
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = parseFloat(e.target.value) || 0;
     dispatch(
@@ -78,8 +85,11 @@ export const BottomPanel = () => {
     );
   };
 
-  // Calculate total time in seconds (durationTicks * 3.75)
-  const totalTimeSeconds = (bar.durationTicks || 0) * 3.75;
+  // ---------------------------------
+  // Calculate total time in seconds
+  // Now using 1 tick = 0.9375 seconds
+  // ---------------------------------
+  const totalTimeSeconds = bar.durationTicks * SECONDS_PER_TICK;
 
   // Darken the bar’s color if available, otherwise default
   const panelColor = bar.color
@@ -97,7 +107,9 @@ export const BottomPanel = () => {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        zIndex: 9999,
       }}
+      onClick={(e) => e.stopPropagation()}
     >
       {/* Top Section */}
       <div>
@@ -105,18 +117,24 @@ export const BottomPanel = () => {
           <h3 className="text-lg font-bold">Sub-Procedure Details</h3>
           <button
             className="text-red-500 hover:text-red-700"
-            onClick={handleClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose();
+            }}
           >
             Close
           </button>
         </div>
-        <p className="mt-0 text-lg font-bold">{selectedSubProcedure.title}</p>
+        <p className="mt-0 text-lg font-bold">{bar.title}</p>
         <p className="mt-0 text-sm text-gray-300">Reactor: {track.title}</p>
       </div>
 
-      {/* Middle Section: Chemical & Volume Inputs */}
-      {selectedSubProcedure.title === 'Dispense Chemicals' && (
-        <div className="mt-2 flex flex-col items-start" style={{ marginLeft: '20rem', marginTop: '-7rem' }}>
+      {/* Middle Section */}
+      {bar.title === 'Dispense Chemicals' && (
+        <div
+          className="mt-2 flex flex-col items-start"
+          style={{ marginLeft: '20rem', marginTop: '-7rem' }}
+        >
           <div className="mb-4 w-3/4">
             <label className="block mb-1">Chemical Type</label>
             <select
@@ -157,11 +175,14 @@ export const BottomPanel = () => {
       {/* Bottom Section: Delete & ID */}
       <div className="relative">
         <p className="absolute bottom-6 left-1 text-sm text-gray-300">
-          ID: {selectedSubProcedure.barId}
+          ID: {bar.id}
         </p>
         <button
           className="absolute bottom-6 right-1 bg-red-500 text-white px-4 py-2 rounded shadow-md hover:bg-red-600 active:bg-red-700 focus:outline-none"
-          onClick={handleDelete}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDelete();
+          }}
           style={{
             backgroundColor: '#e53e3e', // Ensure consistent red color
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',

@@ -74,39 +74,43 @@ const initialState: PlaylistSlice = {
 // ---------------------------------
 // Chemical Configuration
 // ---------------------------------
-// We store the dispensing properties here so they’re easy to update.
+// We'll keep the same baseTime = 30 seconds for each chemical,
+// but now 30 seconds = 32 ticks.
 const CHEMICAL_CONFIG: Record<
   string,
   { baseTime: number; additionalTimePer10: number; density: number }
 > = {
-  Water: { density: 1.0, baseTime: 60, additionalTimePer10: 10 },
-  Ethanol: { density: 0.789, baseTime: 60, additionalTimePer10: 8 },
-  Acetone: { density: 0.791, baseTime: 60, additionalTimePer10: 8 },
-  SodiumChloride: { density: 2.17, baseTime: 60, additionalTimePer10: 15 },
-  GlucoseSolution: { density: 1.2, baseTime: 60, additionalTimePer10: 12 },
-  SulfuricAcid: { density: 1.84, baseTime: 60, additionalTimePer10: 20 },
-  HydrogenPeroxide: { density: 1.1, baseTime: 60, additionalTimePer10: 12 },
-  Glycerol: { density: 1.26, baseTime: 60, additionalTimePer10: 18 },
-  Methanol: { density: 0.791, baseTime: 60, additionalTimePer10: 8 },
-  Chloroform: { density: 1.49, baseTime: 60, additionalTimePer10: 18 },
+  Water: { density: 1.0, baseTime: 30, additionalTimePer10: 10 },
+  Ethanol: { density: 0.789, baseTime: 30, additionalTimePer10: 8 },
+  Acetone: { density: 0.791, baseTime: 30, additionalTimePer10: 8 },
+  SodiumChloride: { density: 2.17, baseTime: 30, additionalTimePer10: 15 },
+  GlucoseSolution: { density: 1.2, baseTime: 30, additionalTimePer10: 12 },
+  SulfuricAcid: { density: 1.84, baseTime: 30, additionalTimePer10: 20 },
+  HydrogenPeroxide: { density: 1.1, baseTime: 30, additionalTimePer10: 12 },
+  Glycerol: { density: 1.26, baseTime: 30, additionalTimePer10: 18 },
+  Methanol: { density: 0.791, baseTime: 30, additionalTimePer10: 8 },
+  Chloroform: { density: 1.49, baseTime: 30, additionalTimePer10: 18 },
 };
 
 // ---------------------------------
-// Helper Functions
+// Helper Constants & Functions
 // ---------------------------------
-const SECONDS_PER_TICK = 3.75; // 1 tick = 3.75 seconds
+
+// If 30 seconds = 32 ticks, then 1 tick = 0.9375 seconds
+const SECONDS_PER_TICK = 30 / 32; // 0.9375
+// We'll also define a min of 32 ticks (i.e., 30 seconds).
+const MIN_TICKS = 32;
+
 /**
- * Calculates the total dispense time in seconds based on the chemical config.
- * For sub-procedures, we assume user enters volume (mL), no rounding, purely proportional.
+ * Calculates total time in seconds based on the chemical config:
+ * time = baseTime + (volume / 10) * additionalTimePer10
  */
 function calculateDispenseTimeSeconds(chemical: string, volume: number): number {
   const config = CHEMICAL_CONFIG[chemical];
   if (!config) {
-    // If chemical not found, default to 60 seconds to avoid errors
-    return 60;
+    // If chemical is unknown, default to 30 seconds
+    return 30;
   }
-  // Example formula: totalTime = baseTime + (volume / 10) * additionalTimePer10
-  // No rounding — purely proportional
   const { baseTime, additionalTimePer10 } = config;
   return baseTime + (volume / 10) * additionalTimePer10;
 }
@@ -118,14 +122,24 @@ export const playlistSlice = createSlice({
   name: 'playlist',
   initialState,
   reducers: {
+    // ---------------------------------
+    // Add a new sub-procedure
+    // ---------------------------------
     addSubProcedure: (
       state,
       action: PayloadAction<{ trackId: string; subProcedure: Bar }>
     ) => {
       const { trackId, subProcedure } = action.payload;
+
+      // If no duration is specified, default to 32 ticks (30 seconds).
+      const updatedSubProcedure: Bar = {
+        ...subProcedure,
+        durationTicks: subProcedure.durationTicks ?? MIN_TICKS,
+      };
+
       state.tracks = state.tracks.map((track) =>
         track.id === trackId
-          ? { ...track, bars: [...track.bars, subProcedure] }
+          ? { ...track, bars: [...track.bars, updatedSubProcedure] }
           : track
       );
     },
@@ -165,9 +179,7 @@ export const playlistSlice = createSlice({
       if (fromTrack && toTrack) {
         const barToMove = fromTrack.bars.find((bar) => bar.id === barId);
         if (barToMove) {
-          const updatedFromBars = fromTrack.bars.filter(
-            (bar) => bar.id !== barId
-          );
+          const updatedFromBars = fromTrack.bars.filter((b) => b.id !== barId);
           const updatedToBars = [
             ...toTrack.bars,
             { ...barToMove, startAtTick: newStartAtTick },
@@ -191,9 +203,7 @@ export const playlistSlice = createSlice({
         track.id === action.payload.trackId
           ? {
               ...track,
-              bars: track.bars.filter(
-                (bar) => bar.id !== action.payload.barId
-              ),
+              bars: track.bars.filter((bar) => bar.id !== action.payload.barId),
             }
           : track
       );
@@ -266,14 +276,13 @@ export const playlistSlice = createSlice({
         );
         if (barIndex > -1) {
           const currentBar = track.bars[barIndex];
-          const targetStartAtTick = currentBar.startAtTick - 4; // Move left by 4 ticks
-
-          // Check if the targetStartAtTick is a valid empty space (no overlap)
+          const targetStartAtTick = currentBar.startAtTick - 4; // Move left 4 ticks
+          // Check if no overlap
           const isSpaceEmpty = !track.bars.some(
-            (bar) =>
-              bar.id !== currentBar.id &&
-              bar.startAtTick < targetStartAtTick + currentBar.durationTicks &&
-              bar.startAtTick + bar.durationTicks > targetStartAtTick
+            (b) =>
+              b.id !== currentBar.id &&
+              b.startAtTick < targetStartAtTick + currentBar.durationTicks &&
+              b.startAtTick + b.durationTicks > targetStartAtTick
           );
 
           if (isSpaceEmpty && targetStartAtTick >= 0) {
@@ -296,9 +305,7 @@ export const playlistSlice = createSlice({
     ) => {
       state.tracks = state.tracks.map((track) => {
         if (track.id !== action.payload.trackId) return track;
-        const index = track.bars.findIndex(
-          (bar) => bar.id === action.payload.barId
-        );
+        const index = track.bars.findIndex((bar) => bar.id === action.payload.barId);
         if (index < track.bars.length - 1) {
           const updatedBars = [...track.bars];
           [updatedBars[index + 1], updatedBars[index]] = [
@@ -306,10 +313,9 @@ export const playlistSlice = createSlice({
             updatedBars[index + 1],
           ];
 
-          // Swap startAtTick to keep correct timeline positions
+          // Swap startAtTick
           const tempTick = updatedBars[index + 1].startAtTick;
-          updatedBars[index + 1].startAtTick =
-            updatedBars[index].startAtTick;
+          updatedBars[index + 1].startAtTick = updatedBars[index].startAtTick;
           updatedBars[index].startAtTick = tempTick;
 
           return { ...track, bars: updatedBars };
@@ -338,17 +344,18 @@ export const playlistSlice = createSlice({
         const updatedBars = track.bars.map((bar) => {
           if (bar.id !== barId) return bar;
 
-          // Prevent negative volumes
+          // 1) Ensure volume is non-negative
           const safeVolume = volume < 0 ? 0 : volume;
 
-          // Calculate total dispensing time (in seconds)
-          const totalTimeSeconds = calculateDispenseTimeSeconds(
-            chemical,
-            safeVolume
-          );
+          // 2) time in seconds
+          const totalTimeSec = calculateDispenseTimeSeconds(chemical, safeVolume);
+          // 3) convert to ticks with 1 tick = 0.9375s
+          let newDurationTicks = totalTimeSec / SECONDS_PER_TICK;
 
-          // Convert to ticks (1 tick = 3.75s)
-          const newDurationTicks = totalTimeSeconds / SECONDS_PER_TICK;
+          // 4) never go below 32 ticks (30s)
+          if (newDurationTicks < MIN_TICKS) {
+            newDurationTicks = MIN_TICKS;
+          }
 
           return {
             ...bar,
@@ -378,7 +385,7 @@ export const {
   moveBar,
   setTrackColor,
   setFlatboardScroll,
-  updateDispenseParams, // export the new action
+  updateDispenseParams,
 } = playlistSlice.actions;
 
 export default playlistSlice.reducer;
