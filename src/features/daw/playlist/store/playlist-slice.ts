@@ -324,6 +324,25 @@ export const playlistSlice = createSlice({
       });
     },
 
+    updateBarPosition: (
+      state,
+      action: PayloadAction<{ trackId: string; barId: string; newStartAtTick: number }>
+    ) => {
+      const { trackId, barId, newStartAtTick } = action.payload;
+
+      state.tracks = state.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+
+        const updatedBars = track.bars.map((bar) =>
+          bar.id === barId
+            ? { ...bar, startAtTick: newStartAtTick }
+            : bar
+        );
+
+        return { ...track, bars: updatedBars };
+      });
+    },
+
     // ---------------------------------
     // NEW ACTION: Update Dispense Params
     // ---------------------------------
@@ -371,6 +390,8 @@ export const playlistSlice = createSlice({
   },
 });
 
+
+
 export const {
   addSubProcedure,
   removeTrack,
@@ -386,6 +407,7 @@ export const {
   setTrackColor,
   setFlatboardScroll,
   updateDispenseParams,
+  updateBarPosition,
 } = playlistSlice.actions;
 
 export default playlistSlice.reducer;
