@@ -69,49 +69,77 @@ export const TrackBar: React.FC<TrackBarProps> = ({ bar, track, onBarDetails }) 
   };
 
   /**
-   * Handler to move the bar to the left by swapping it with the preceding bar.
-   * Ensures that no gaps are introduced by adjusting startAtTick based on adjacent bar's duration.
-   *//**
- * Handler to move the bar to the left by swapping it with the preceding bar.
- * Ensures that no gaps or overlaps are introduced by adjusting startAtTick based on adjacent bar's duration.
- */const handleMoveLeft = (e: React.MouseEvent) => {
-  e.stopPropagation();
+   * Handler to move the bar to the left by swapping it with the preceding bar if it's perfectly adjacent.
+   * Otherwise, if there's a gap, it snaps to close the gap with the nearest bar on the left.
+   */
+  const handleMoveLeft = (e: React.MouseEvent) => {
+    e.stopPropagation();
 
-  // Find the bar that ends exactly at the start tick of the current bar
-  const leftBar = track.bars.find(
-    (b) => b.startAtTick + b.durationTicks === bar.startAtTick && b.id !== bar.id
-  );
-  if (!leftBar) return; // No adjacent bar to the left; do nothing
+    // 1. Check if there's an immediately adjacent bar on the left
+    const leftBar = track.bars.find(
+      (b) => b.startAtTick + b.durationTicks === bar.startAtTick && b.id !== bar.id
+    );
 
-  const originalLeftBarStart = leftBar.startAtTick;
+    if (leftBar) {
+      // -- OLD GAP-FREE SWAP LOGIC (like your previous code) --
+      const leftBarOldStart = leftBar.startAtTick;
+      const currentBarDuration = bar.durationTicks;
 
-  // Swap the startAtTick values
-  dispatch(
-    updateBarPosition({
-      trackId: track.id,
-      barId: bar.id,
-      newStartAtTick: originalLeftBarStart,
-    })
-  );
+      // Move the current bar to the left bar's old start
+      dispatch(
+        updateBarPosition({
+          trackId: track.id,
+          barId: bar.id,
+          newStartAtTick: leftBarOldStart,
+        })
+      );
 
-  dispatch(
-    updateBarPosition({
-      trackId: track.id,
-      barId: leftBar.id,
-      newStartAtTick: bar.durationTicks,
-    })
-  );
-};
+      // Move the left bar so that it starts right after the current bar ends
+      dispatch(
+        updateBarPosition({
+          trackId: track.id,
+          barId: leftBar.id,
+          newStartAtTick: leftBarOldStart + currentBarDuration,
+        })
+      );
 
+      return;
+    }
+
+    // 2. If no adjacent bar, look for ANY bar on the left to "snap" to
+    const snapCandidate = track.bars
+      .filter((b) => b.id !== bar.id && b.startAtTick + b.durationTicks < bar.startAtTick)
+      // sort by who ends closest on the left
+      .sort(
+        (b1, b2) =>
+          (b2.startAtTick + b2.durationTicks) - (b1.startAtTick + b1.durationTicks)
+      )[0];
+
+    if (!snapCandidate) return; // No bar to snap to
+
+    // Snap the current bar so it starts exactly where snapCandidate ends
+    const newStart = snapCandidate.startAtTick + snapCandidate.durationTicks;
+
+    dispatch(
+      updateBarPosition({
+        trackId: track.id,
+        barId: bar.id,
+        newStartAtTick: newStart,
+      })
+    );
+  };
 
   // Calculate CSS positioning based on ticks and pixel width
   const computedLeft = bar.startAtTick * TICK_WIDTH_PIXEL;
   const computedWidth = bar.durationTicks * TICK_WIDTH_PIXEL;
 
-  // Determine if move buttons should be disabled (no adjacent bar in that direction)
+  // Determine if move buttons should be disabled
+  // We relaxed hasLeftBar so it's true if there's ANY bar to the left, even if there's a gap.
   const hasRightBar = track.bars.some((b) => b.startAtTick === endTick && b.id !== bar.id);
   const hasLeftBar = track.bars.some(
-    (b) => b.startAtTick + b.durationTicks === bar.startAtTick && b.id !== bar.id
+    (b) =>
+      b.id !== bar.id &&
+      b.startAtTick + b.durationTicks <= bar.startAtTick
   );
 
   return (

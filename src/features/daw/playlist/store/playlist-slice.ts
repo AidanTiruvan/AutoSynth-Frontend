@@ -74,8 +74,6 @@ const initialState: PlaylistSlice = {
 // ---------------------------------
 // Chemical Configuration
 // ---------------------------------
-// We'll keep the same baseTime = 30 seconds for each chemical,
-// but now 30 seconds = 32 ticks.
 const CHEMICAL_CONFIG: Record<
   string,
   { baseTime: number; additionalTimePer10: number; density: number }
@@ -91,10 +89,6 @@ const CHEMICAL_CONFIG: Record<
   Methanol: { density: 0.791, baseTime: 30, additionalTimePer10: 8 },
   Chloroform: { density: 1.49, baseTime: 30, additionalTimePer10: 18 },
 };
-
-// ---------------------------------
-// Helper Constants & Functions
-// ---------------------------------
 
 // If 30 seconds = 32 ticks, then 1 tick = 0.9375 seconds
 const SECONDS_PER_TICK = 30 / 32; // 0.9375
@@ -115,6 +109,22 @@ function calculateDispenseTimeSeconds(chemical: string, volume: number): number 
   return baseTime + (volume / 10) * additionalTimePer10;
 }
 
+/**
+ * Helper function to force all bars in a track
+ * to be gap-free by chain-shifting.
+ */
+function realignTrackBars(track: Track) {
+  // Sort bars left to right
+  track.bars.sort((a, b) => a.startAtTick - b.startAtTick);
+
+  // Chain shift: each bar starts where previous bar ended
+  for (let i = 1; i < track.bars.length; i++) {
+    const prev = track.bars[i - 1];
+    const current = track.bars[i];
+    current.startAtTick = prev.startAtTick + prev.durationTicks;
+  }
+}
+
 // ---------------------------------
 // Slice Definition
 // ---------------------------------
@@ -122,16 +132,11 @@ export const playlistSlice = createSlice({
   name: 'playlist',
   initialState,
   reducers: {
-    // ---------------------------------
-    // Add a new sub-procedure
-    // ---------------------------------
     addSubProcedure: (
       state,
       action: PayloadAction<{ trackId: string; subProcedure: Bar }>
     ) => {
       const { trackId, subProcedure } = action.payload;
-
-      // If no duration is specified, default to 32 ticks (30 seconds).
       const updatedSubProcedure: Bar = {
         ...subProcedure,
         durationTicks: subProcedure.durationTicks ?? MIN_TICKS,
@@ -227,6 +232,9 @@ export const playlistSlice = createSlice({
       );
     },
 
+    /**
+     * Update the duration of a bar, then realign the bars so no overlaps or gaps remain.
+     */
     resizeBar: (
       state,
       action: PayloadAction<{
@@ -235,18 +243,22 @@ export const playlistSlice = createSlice({
         newDurationTicks: number;
       }>
     ) => {
-      state.tracks = state.tracks.map((track) =>
-        track.id === action.payload.trackId
-          ? {
-              ...track,
-              bars: track.bars.map((bar) =>
-                bar.id === action.payload.barId
-                  ? { ...bar, durationTicks: action.payload.newDurationTicks }
-                  : bar
-              ),
-            }
-          : track
-      );
+      state.tracks = state.tracks.map((track) => {
+        if (track.id === action.payload.trackId) {
+          const updatedBars = track.bars.map((bar) =>
+            bar.id === action.payload.barId
+              ? { ...bar, durationTicks: action.payload.newDurationTicks }
+              : bar
+          );
+          const newTrack = { ...track, bars: updatedBars };
+
+          // Ensure all bars remain adjacent after this resize
+          realignTrackBars(newTrack);
+
+          return newTrack;
+        }
+        return track;
+      });
     },
 
     setTrackColor: (
@@ -343,9 +355,9 @@ export const playlistSlice = createSlice({
       });
     },
 
-    // ---------------------------------
-    // NEW ACTION: Update Dispense Params
-    // ---------------------------------
+    /**
+     * Updates the bar's chemical and volume, recalculates duration, then realigns to avoid gaps/overlaps.
+     */
     updateDispenseParams: (
       state,
       action: PayloadAction<{
@@ -384,13 +396,15 @@ export const playlistSlice = createSlice({
           };
         });
 
-        return { ...track, bars: updatedBars };
+        // Realign after updating durations
+        const newTrack = { ...track, bars: updatedBars };
+        realignTrackBars(newTrack);
+
+        return newTrack;
       });
     },
   },
 });
-
-
 
 export const {
   addSubProcedure,
