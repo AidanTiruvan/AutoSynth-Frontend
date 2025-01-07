@@ -13,10 +13,9 @@ const darkenColor = (color: string, amount: number) => {
   const r = Math.max((num >> 16) - amount, 0);
   const g = Math.max(((num >> 8) & 0x00ff) - amount, 0);
   const b = Math.max((num & 0x0000ff) - amount, 0);
-  return `rgba(${r}, ${g}, ${b}, 0.8)`; // Add opacity for translucency
+  return `rgba(${r}, ${g}, ${b}, 0.8)`;
 };
 
-// Example chemicals for dropdown
 const CHEMICAL_OPTIONS = [
   { label: 'Water', value: 'Water' },
   { label: 'Ethanol', value: 'Ethanol' },
@@ -163,8 +162,8 @@ export const BottomPanel: React.FC = () => {
             />
           </div>
 
-          <div className="w-3/4">
-            <label className="block mb-1">Total Time (seconds)</label>
+          <div className="w-3/4 flex items-center">
+           <label className="block mb-0 mr-1">Total Time (seconds):</label>
             <p className="text-gray-200 text-center">
               {totalTimeSeconds.toFixed(2)} sec
             </p>
