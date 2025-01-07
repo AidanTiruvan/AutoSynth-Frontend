@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
 import {
@@ -34,6 +34,17 @@ const SECONDS_PER_TICK = 0.9375;
 
 export const BottomPanel: React.FC = () => {
   const dispatch = useDispatch();
+
+  // Local state for Run Reaction inputs and errors
+  const [amplitude, setAmplitude] = useState<string>('');
+  const [rpm, setRpm] = useState<string>('');
+  const [temperature, setTemperature] = useState<string>('');
+  const [duration, setDuration] = useState<string>('');
+  const [amplitudeError, setAmplitudeError] = useState<string>('');
+  const [rpmError, setRpmError] = useState<string>('');
+  const [temperatureError, setTemperatureError] = useState<string>('');
+  const [durationError, setDurationError] = useState<string>('');
+  const [temperatureWarning, setTemperatureWarning] = useState<string>('');
 
   const selectedSubProcedure = useSelector(
     (state: RootState) => state.playlist.selectedSubProcedure
@@ -82,6 +93,48 @@ export const BottomPanel: React.FC = () => {
         volume: inputValue < 0 ? 0 : inputValue,
       })
     );
+  };
+
+  // Validation Handlers for Run Reaction inputs
+  const validateAmplitude = (value: string) => {
+    const num = parseFloat(value);
+    if (isNaN(num) || num < 0 || num > 10) {
+      setAmplitudeError('Amplitude must be between 0 and 10 mm.');
+    } else {
+      setAmplitudeError('');
+    }
+    setAmplitude(value);
+  };
+
+  const validateRpm = (value: string) => {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 0 || num > 300 || !Number.isInteger(num)) {
+      setRpmError('RPM must be a whole number between 0 and 300.');
+    } else {
+      setRpmError('');
+    }
+    setRpm(value);
+  };
+
+  const validateTemperature = (value: string) => {
+    const num = parseFloat(value);
+    if (isNaN(num) || num < 0 || num > 150) {
+      setTemperatureError('Temperature must be between 0°C and 150°C.');
+    } else {
+      setTemperatureError('');
+      setTemperatureWarning('Please ensure the temperature is in Celsius.');
+    }
+    setTemperature(value);
+  };
+
+  const validateDuration = (value: string) => {
+    const num = parseFloat(value);
+    if (isNaN(num) || num < 10 || num > 300) {
+      setDurationError('Duration must be between 10 seconds and 300 seconds.');
+    } else {
+      setDurationError('');
+    }
+    setDuration(value);
   };
 
   // ---------------------------------
@@ -163,13 +216,80 @@ export const BottomPanel: React.FC = () => {
           </div>
 
           <div className="w-3/4 flex items-center">
-           <label className="block mb-0 mr-1">Total Time (seconds):</label>
+            <label className="block mb-0 mr-1">Total Time (seconds):</label>
             <p className="text-gray-200 text-center">
               {totalTimeSeconds.toFixed(2)} sec
             </p>
           </div>
         </div>
       )}
+
+      {bar.title === 'Run Reaction' && (
+  <div
+    className="mt-2 flex flex-wrap items-start"
+    style={{ marginLeft: '20rem', marginTop: '-7rem' }}
+  >
+    {/* Shake Amplitude */}
+    <div className="mb-4 w-1/2 pr-4">
+      <label className="block mb-1">Shake Amplitude (0-10 mm)</label>
+      <input
+        type="number"
+        className="text-black px-4 py-1 rounded"
+        value={amplitude}
+        onChange={(e) => validateAmplitude(e.target.value)}
+      />
+      {amplitudeError && (
+        <p className="text-yellow-500 text-sm">{amplitudeError}</p>
+      )}
+    </div>
+
+    {/* Shake Speed */}
+    <div className="mb-4 w-1/2 pl-4">
+      <label className="block mb-1">Shake Speed (RPM)</label>
+      <input
+        type="number"
+        className="text-black px-4 py-1 rounded"
+        value={rpm}
+        onChange={(e) => validateRpm(e.target.value)}
+      />
+      {rpmError && <p className="text-yellow-500 text-sm">{rpmError}</p>}
+    </div>
+
+    {/* Temperature */}
+    <div className="mb-4 w-1/2 pr-4">
+      <label className="block mb-1">Temperature (°C)</label>
+      <input
+        type="number"
+        className="text-black px-4 py-1 rounded"
+        value={temperature}
+        onChange={(e) => validateTemperature(e.target.value)}
+        placeholder="Enter Temperature"
+      />
+      {temperatureError && (
+        <p className="text-yellow-500 text-sm">{temperatureError}</p>
+      )}
+      {temperatureWarning && (
+        <p className="text-yellow-500 text-sm">{temperatureWarning}</p>
+      )}
+    </div>
+
+    {/* Reaction Duration */}
+    <div className="mb-4 w-1/2 pl-4">
+      <label className="block mb-1">Reaction Duration (seconds)</label>
+      <input
+        type="number"
+        className="text-black px-4 py-1 rounded"
+        value={duration}
+        onChange={(e) => validateDuration(e.target.value)}
+        placeholder="Duration in seconds"
+      />
+      {durationError && (
+        <p className="text-yellow-500 text-sm">{durationError}</p>
+      )}
+    </div>
+  </div>
+)}
+
 
       {/* Bottom Section: Delete & ID */}
       <div className="relative">
@@ -183,7 +303,7 @@ export const BottomPanel: React.FC = () => {
             handleDelete();
           }}
           style={{
-            backgroundColor: '#e53e3e', // Ensure consistent red color
+            backgroundColor: '#e53e3e',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
           }}
         >
