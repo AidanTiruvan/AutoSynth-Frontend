@@ -115,6 +115,7 @@ export const TrackBoard = ({
               position: 'absolute',
               left: `${menuPosition.x}px`,
               top: `${menuPosition.y}px`,
+              zIndex: 9999,
               transform: 'translate(0, 0)',
             }}
           >
