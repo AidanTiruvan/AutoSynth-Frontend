@@ -8,4 +8,6 @@ export type Bar = {
   // New optional properties:
   chemical?: string;
   volume?: number;
+  dripTime?: number;
+  destinationVial?: string;
 };

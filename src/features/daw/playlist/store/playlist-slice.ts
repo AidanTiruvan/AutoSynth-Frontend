@@ -1,7 +1,10 @@
+// C:\Users\aidant\Downloads\AutoSynth\frontend\src\features\daw\playlist\store\playlist-slice.ts
+
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { Track } from '../../../../model/track/track';
 import { Bar } from '../../../../model/bar/bar';
 import { TrackColor } from '../../../../model/track/track-color';
+import { getUpdatedDispenseBar } from './dispense-chemicals';
 
 export interface PlaylistSlice {
   tracks: Track[];
@@ -71,53 +74,9 @@ const initialState: PlaylistSlice = {
   toCopyBar: null,
 };
 
-// ---------------------------------
-// Chemical Configuration
-// ---------------------------------
-const CHEMICAL_CONFIG: Record<
-  string,
-  { baseTime: number; additionalTimePer10: number; density: number }
-> = {
-  Water: { density: 1.0, baseTime: 30, additionalTimePer10: 10 },
-  Ethanol: { density: 0.789, baseTime: 30, additionalTimePer10: 8 },
-  Acetone: { density: 0.791, baseTime: 30, additionalTimePer10: 8 },
-  SodiumChloride: { density: 2.17, baseTime: 30, additionalTimePer10: 15 },
-  GlucoseSolution: { density: 1.2, baseTime: 30, additionalTimePer10: 12 },
-  SulfuricAcid: { density: 1.84, baseTime: 30, additionalTimePer10: 20 },
-  HydrogenPeroxide: { density: 1.1, baseTime: 30, additionalTimePer10: 12 },
-  Glycerol: { density: 1.26, baseTime: 30, additionalTimePer10: 18 },
-  Methanol: { density: 0.791, baseTime: 30, additionalTimePer10: 8 },
-  Chloroform: { density: 1.49, baseTime: 30, additionalTimePer10: 18 },
-};
-
-// If 30 seconds = 32 ticks, then 1 tick = 0.9375 seconds
-const SECONDS_PER_TICK = 30 / 32; // 0.9375
-// We'll also define a min of 32 ticks (i.e., 30 seconds).
-const MIN_TICKS = 32;
-
-/**
- * Calculates total time in seconds based on the chemical config:
- * time = baseTime + (volume / 10) * additionalTimePer10
- */
-function calculateDispenseTimeSeconds(chemical: string, volume: number): number {
-  const config = CHEMICAL_CONFIG[chemical];
-  if (!config) {
-    // If chemical is unknown, default to 30 seconds
-    return 30;
-  }
-  const { baseTime, additionalTimePer10 } = config;
-  return baseTime + (volume / 10) * additionalTimePer10;
-}
-
-/**
- * Helper function to force all bars in a track
- * to be gap-free by chain-shifting.
- */
+// Helper to realign bars to avoid gaps or overlaps
 function realignTrackBars(track: Track) {
-  // Sort bars left to right
   track.bars.sort((a, b) => a.startAtTick - b.startAtTick);
-
-  // Chain shift: each bar starts where previous bar ended
   for (let i = 1; i < track.bars.length; i++) {
     const prev = track.bars[i - 1];
     const current = track.bars[i];
@@ -125,9 +84,6 @@ function realignTrackBars(track: Track) {
   }
 }
 
-// ---------------------------------
-// Slice Definition
-// ---------------------------------
 export const playlistSlice = createSlice({
   name: 'playlist',
   initialState,
@@ -139,7 +95,7 @@ export const playlistSlice = createSlice({
       const { trackId, subProcedure } = action.payload;
       const updatedSubProcedure: Bar = {
         ...subProcedure,
-        durationTicks: subProcedure.durationTicks ?? MIN_TICKS,
+        durationTicks: subProcedure.durationTicks ?? 32,
       };
 
       state.tracks = state.tracks.map((track) =>
@@ -232,9 +188,6 @@ export const playlistSlice = createSlice({
       );
     },
 
-    /**
-     * Update the duration of a bar, then realign the bars so no overlaps or gaps remain.
-     */
     resizeBar: (
       state,
       action: PayloadAction<{
@@ -251,10 +204,7 @@ export const playlistSlice = createSlice({
               : bar
           );
           const newTrack = { ...track, bars: updatedBars };
-
-          // Ensure all bars remain adjacent after this resize
           realignTrackBars(newTrack);
-
           return newTrack;
         }
         return track;
@@ -288,8 +238,7 @@ export const playlistSlice = createSlice({
         );
         if (barIndex > -1) {
           const currentBar = track.bars[barIndex];
-          const targetStartAtTick = currentBar.startAtTick - 4; // Move left 4 ticks
-          // Check if no overlap
+          const targetStartAtTick = currentBar.startAtTick - 4;
           const isSpaceEmpty = !track.bars.some(
             (b) =>
               b.id !== currentBar.id &&
@@ -306,7 +255,6 @@ export const playlistSlice = createSlice({
             return { ...track, bars: updatedBars };
           }
         }
-
         return track;
       });
     },
@@ -325,7 +273,7 @@ export const playlistSlice = createSlice({
             updatedBars[index + 1],
           ];
 
-          // Swap startAtTick
+          // Swap their startAtTick
           const tempTick = updatedBars[index + 1].startAtTick;
           updatedBars[index + 1].startAtTick = updatedBars[index].startAtTick;
           updatedBars[index].startAtTick = tempTick;
@@ -338,25 +286,30 @@ export const playlistSlice = createSlice({
 
     updateBarPosition: (
       state,
-      action: PayloadAction<{ trackId: string; barId: string; newStartAtTick: number }>
+      action: PayloadAction<{
+        trackId: string;
+        barId: string;
+        newStartAtTick: number;
+      }>
     ) => {
       const { trackId, barId, newStartAtTick } = action.payload;
-
       state.tracks = state.tracks.map((track) => {
         if (track.id !== trackId) return track;
-
         const updatedBars = track.bars.map((bar) =>
           bar.id === barId
             ? { ...bar, startAtTick: newStartAtTick }
             : bar
         );
-
         return { ...track, bars: updatedBars };
       });
     },
 
     /**
-     * Updates the bar's chemical and volume, recalculates duration, then realigns to avoid gaps/overlaps.
+     * Called whenever user changes any part of the "Dispense Chemicals" settings:
+     *  - chemical
+     *  - volume
+     *  - dripTime
+     *  - destinationVial
      */
     updateDispenseParams: (
       state,
@@ -365,9 +318,18 @@ export const playlistSlice = createSlice({
         barId: string;
         chemical: string;
         volume: number;
+        dripTime?: number;
+        destinationVial?: string;
       }>
     ) => {
-      const { trackId, barId, chemical, volume } = action.payload;
+      const {
+        trackId,
+        barId,
+        chemical,
+        volume,
+        dripTime,
+        destinationVial,
+      } = action.payload;
 
       state.tracks = state.tracks.map((track) => {
         if (track.id !== trackId) return track;
@@ -375,31 +337,17 @@ export const playlistSlice = createSlice({
         const updatedBars = track.bars.map((bar) => {
           if (bar.id !== barId) return bar;
 
-          // 1) Ensure volume is non-negative
-          const safeVolume = volume < 0 ? 0 : volume;
-
-          // 2) time in seconds
-          const totalTimeSec = calculateDispenseTimeSeconds(chemical, safeVolume);
-          // 3) convert to ticks with 1 tick = 0.9375s
-          let newDurationTicks = totalTimeSec / SECONDS_PER_TICK;
-
-          // 4) never go below 32 ticks (30s)
-          if (newDurationTicks < MIN_TICKS) {
-            newDurationTicks = MIN_TICKS;
-          }
-
-          return {
-            ...bar,
+          return getUpdatedDispenseBar(
+            bar,
             chemical,
-            volume: safeVolume,
-            durationTicks: newDurationTicks,
-          };
+            volume,
+            dripTime,
+            destinationVial
+          );
         });
 
-        // Realign after updating durations
         const newTrack = { ...track, bars: updatedBars };
         realignTrackBars(newTrack);
-
         return newTrack;
       });
     },
